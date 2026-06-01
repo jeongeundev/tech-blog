@@ -6,8 +6,8 @@ const siteMetadata = {
   description: 'A blog documenting my journey learning web development',
   language: 'en-us',
   theme: 'system', // system, dark or light
-  siteUrl: 'https://jeongeundev.vercel.app', // TODO: update after deployment
-  siteRepo: 'https://github.com/jeongeundev/tech-blog', // TODO: update after repo creation
+  siteUrl: 'https://tech-blog-nu-tan.vercel.app',
+  siteRepo: 'https://github.com/jeongeundev/tech-blog',
   siteLogo: `${process.env.BASE_PATH || ''}/static/images/logo.png`,
   socialBanner: `${process.env.BASE_PATH || ''}/static/images/twitter-card.png`,
   email: 'kjeongeun.dev@gmail.com',
