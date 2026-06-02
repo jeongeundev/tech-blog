@@ -7,20 +7,10 @@ interface Project {
 
 const projectsData: Project[] = [
   {
-    title: 'A Search Engine',
-    description: `What if you could look up any information in the world? Webpages, images, videos
-    and more. Google has many features to help you find exactly what you're looking
-    for.`,
-    imgSrc: '/static/images/google.png',
-    href: 'https://www.google.com',
-  },
-  {
-    title: 'The Time Machine',
-    description: `Imagine being able to travel back in time or to the future. Simple turn the knob
-    to the desired date and press "Go". No more worrying about lost keys or
-    forgotten headphones with this simple yet affordable solution.`,
-    imgSrc: '/static/images/time-machine.jpg',
-    href: '/blog/the-time-machine',
+    title: '채용공고 트렌드 분석',
+    description:
+      '점핏·사람인 등에서 개발자 채용공고를 매일 수집해 기술 스택, 연봉, 경력 요건 트렌드를 분석하는 데이터 파이프라인 프로젝트.',
+    href: '/tags/job-crawler',
   },
 ]
 
