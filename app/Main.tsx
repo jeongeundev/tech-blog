@@ -26,19 +26,17 @@ export default function Home({ posts }) {
               <h1 className="text-3xl font-extrabold tracking-tight text-gray-900 dark:text-gray-100">
                 {siteMetadata.author}
               </h1>
-              <p className="text-lg text-gray-500 dark:text-gray-400">
-                {siteMetadata.description}
-              </p>
+              <p className="text-lg text-gray-500 dark:text-gray-400">{siteMetadata.description}</p>
               <div className="flex justify-center gap-4 sm:justify-start">
                 <Link
                   href={siteMetadata.github}
-                  className="text-sm text-primary-500 hover:text-primary-600 dark:hover:text-primary-400"
+                  className="text-primary-500 hover:text-primary-600 dark:hover:text-primary-400 text-sm"
                 >
                   GitHub →
                 </Link>
                 <Link
                   href="/about"
-                  className="text-sm text-primary-500 hover:text-primary-600 dark:hover:text-primary-400"
+                  className="text-primary-500 hover:text-primary-600 dark:hover:text-primary-400 text-sm"
                 >
                   About →
                 </Link>
@@ -55,7 +53,7 @@ export default function Home({ posts }) {
                 </h2>
                 <Link
                   href="/projects"
-                  className="text-sm text-primary-500 hover:text-primary-600 dark:hover:text-primary-400"
+                  className="text-primary-500 hover:text-primary-600 dark:hover:text-primary-400 text-sm"
                 >
                   All →
                 </Link>
@@ -65,7 +63,7 @@ export default function Home({ posts }) {
                   <li key={p.title}>
                     <Link
                       href={p.href ?? '/projects'}
-                      className="font-medium text-gray-900 hover:text-primary-500 dark:text-gray-100 dark:hover:text-primary-400"
+                      className="hover:text-primary-500 dark:hover:text-primary-400 font-medium text-gray-900 dark:text-gray-100"
                     >
                       {p.title}
                     </Link>
@@ -83,7 +81,7 @@ export default function Home({ posts }) {
                 </h2>
                 <Link
                   href="/study"
-                  className="text-sm text-primary-500 hover:text-primary-600 dark:hover:text-primary-400"
+                  className="text-primary-500 hover:text-primary-600 dark:hover:text-primary-400 text-sm"
                 >
                   All →
                 </Link>
@@ -93,7 +91,7 @@ export default function Home({ posts }) {
                   <li key={s.title}>
                     <Link
                       href={s.href}
-                      className="font-medium text-gray-900 hover:text-primary-500 dark:text-gray-100 dark:hover:text-primary-400"
+                      className="hover:text-primary-500 dark:hover:text-primary-400 font-medium text-gray-900 dark:text-gray-100"
                     >
                       {s.title}
                     </Link>
