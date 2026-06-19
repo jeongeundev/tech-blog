@@ -1,11 +1,15 @@
 {
-  "webdev": 2,
-  "nextjs": 3,
+  "webdev": 3,
+  "nextjs": 4,
   "tailwind": 2,
+  "vercel": 1,
+  "ai": 2,
+  "agent": 2,
+  "claude-code": 2,
+  "react": 1,
+  "blog": 1,
   "job-crawler": 1,
   "crawling": 1,
   "data-engineering": 1,
-  "python": 1,
-  "vercel": 1,
-  "blog": 1
+  "python": 1
 }
