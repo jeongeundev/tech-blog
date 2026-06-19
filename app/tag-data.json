@@ -2,10 +2,10 @@
   "webdev": 2,
   "nextjs": 3,
   "tailwind": 2,
-  "vercel": 1,
-  "blog": 1,
   "job-crawler": 1,
   "crawling": 1,
   "data-engineering": 1,
-  "python": 1
+  "python": 1,
+  "vercel": 1,
+  "blog": 1
 }

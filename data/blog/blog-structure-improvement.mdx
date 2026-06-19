@@ -3,7 +3,7 @@ title: 'Next.js 블로그에 카테고리 구조 추가하기'
 date: '2026-06-02'
 tags: ['webdev', 'nextjs', 'tailwind']
 draft: false
-summary: '글이 한 곳에 쌓이는 구조에서 Projects / Study 카테고리로 나누고, 메인 페이지에 프로필과 카테고리 섹션을 추가한 과정을 정리했습니다.'
+summary: '글이 한 곳에 쌓이는 구조에서 Projects / Study 카테고리로 나누고, 메인 페이지에 프로필과 카테고리 섹션을 추가한 과정을 정리했다.'
 ---
 
 [이전 글](/blog/building-this-blog)에서 블로그를 처음 만들고 배포하는 과정을 다뤘다.
@@ -72,7 +72,7 @@ const projectsData = [
   {
     title: '채용공고 트렌드 분석',
     description: '...',
-    href: '/tags/job-crawler',  // 태그 페이지로 연결
+    href: '/tags/job-crawler', // 태그 페이지로 연결
   },
 ]
 ```
@@ -89,6 +89,7 @@ Projects 페이지와 동일한 구조로, Card 컴포넌트를 재사용했다.
 Projects와 Study 페이지에서 카드 내용 길이가 달라 높이가 맞지 않는 문제가 있었다.
 
 원인은 두 가지였다.
+
 - 이미지가 없을 때 `h-full`이 적용되지 않아 카드 내부가 높이를 채우지 못함
 - 카드 내부가 flex column 구조가 아니어서 "Learn more" 버튼 위치가 내용 길이에 따라 달라짐
 
@@ -128,9 +129,9 @@ Projects와 Study 페이지에서 카드 내용 길이가 달라 높이가 맞�
 
 앞으로 글을 쓸 때 태그를 이렇게 달면 카테고리와 자동으로 연결된다.
 
-| 내용 | 태그 |
-|------|------|
+| 내용                      | 태그          |
+| ------------------------- | ------------- |
 | 채용공고 프로젝트 관련 글 | `job-crawler` |
-| 백엔드 공부 | `backend` |
-| ADP 관련 | `adp` |
-| 블로그/웹 개발 관련 | `webdev` |
+| 백엔드 공부               | `backend`     |
+| ADP 관련                  | `adp`         |
+| 블로그/웹 개발 관련       | `webdev`      |

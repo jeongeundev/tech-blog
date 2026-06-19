@@ -1,0 +1,269 @@
+---
+title: 'Claude Code 훅(Hook)'
+date: '2026-06-20'
+tags: ['ai', 'agent', 'claude-code']
+draft: true
+summary: '훅은 정해진 이벤트에 내가 지정한 동작을 자동으로 실행하는 기능이다. 훅 이벤트와 설정 구조를 정리하고, 테스트 없이 구현을 못 하게 막는 TDD 가드 훅과 작업이 끝났을 때 소리로 알려주는 훅을 직접 설정해본다.'
+---
+
+지난 글에서 Claude Code의 기본 개념을 정리하면서 훅(Hook)을 짧게 짚었다.
+이번엔 훅을 실제로 설정해본다. 예시는 두 가지 — TDD 가드와 작업 완료 소리 알림이다.
+
+---
+
+## Hook
+
+Hook은 **정해진 시점(이벤트)에 자동으로 실행되는 동작**이다.
+커맨드처럼 내가 직접 부르는 게 아니라, 특정 이벤트가 발생하면 알아서 끼어든다.
+
+"파일을 수정하기 전에 검사한다", "작업이 끝나면 알림을 보낸다" 같은 걸
+매번 손으로 하지 않고 자동화하는 용도다.
+
+---
+
+## Hook Event
+
+이벤트는 30개가 넘는다. 그중 자주 쓰는 핵심 이벤트만 추리면 이렇다.
+
+| 이벤트             | 언제 실행되나                                 |
+| ------------------ | --------------------------------------------- |
+| `PreToolUse`       | 도구(툴)를 실행하기 **직전** — 막을 수도 있다 |
+| `PostToolUse`      | 도구 실행이 **끝난 직후**                     |
+| `Stop`             | Claude가 응답을 **마쳤을 때**                 |
+| `Notification`     | Claude Code가 알림을 보낼 때 (권한 요청 등)   |
+| `UserPromptSubmit` | 내가 프롬프트를 보냈을 때                     |
+| `SubagentStop`     | 서브에이전트가 작업을 끝냈을 때               |
+
+이 글의 예시 두 개는 `PreToolUse`, `Stop`, `Notification` 세 가지만 쓴다.
+
+---
+
+## 어디에 설정하나
+
+훅은 `settings.json` 파일에 작성한다. 위치에 따라 적용 범위가 다르다.
+
+| 위치                          | 범위                                    |
+| ----------------------------- | --------------------------------------- |
+| `~/.claude/settings.json`     | 모든 프로젝트 (내 PC 전역)              |
+| `.claude/settings.json`       | 해당 프로젝트 (레포에 커밋해 공유 가능) |
+| `.claude/settings.local.json` | 해당 프로젝트 (gitignore, 나만)         |
+
+기본 구조는 **이벤트 → matcher → hooks** 3단 중첩이다.
+
+```json
+{
+  "hooks": {
+    "이벤트이름": [
+      {
+        "matcher": "조건",
+        "hooks": [{ "type": "command", "command": "실행할 명령" }]
+      }
+    ]
+  }
+}
+```
+
+여기서 `matcher`는 한 가지 주의할 게 있다.
+`Bash`, `Edit|Write` 같은 **도구 이름 매칭은 `PreToolUse` / `PostToolUse` 계열에서만** 의미가 있다.
+`Stop`은 matcher를 아예 안 받아서 생략해도 되고, `Notification`의 matcher는 도구가 아니라 알림 종류를 가리킨다.
+
+---
+
+## 예시 1. TDD 가드 훅
+
+**언제 쓰나** — 테스트를 먼저 작성하는 TDD를 강제하고 싶을 때.
+구현 코드를 작성하려는 순간 해당 모듈의 테스트가 먼저 있는지 검사해서, 테스트가 없으면 아예 편집을 막는다.
+
+`PreToolUse`는 도구 실행 **직전**에 끼어들어 작업을 차단할 수 있다는 점을 활용한다.
+파일 수정 도구(`Edit|Write|MultiEdit`)에 검사 스크립트를 건다.
+
+```json
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$CLAUDE_PROJECT_DIR/scripts/hooks/tdd-guard.sh"
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+`$CLAUDE_PROJECT_DIR`는 프로젝트 루트를 가리키는 변수다.
+스크립트는 표준 입력으로 들어온 JSON에서 수정하려는 파일 경로를 꺼내, 다음 순서로 검사한다.
+
+- 파일 경로가 없거나, 아직 `package.json`이 없는 부트스트랩 단계 → **통과**
+- 테스트 파일 자체(`*.test.*`, `*spec*`, `__tests__/`) → **통과**
+- 설정·타입·스타일 파일(`*.json`, `*.css`, `tsconfig`, `next.config` 등) → **통과**
+- `types/` 폴더, Next.js 프레임워크 파일(`layout.tsx`, `page.tsx` 등) → **통과**
+- 그 외 소스 파일(`.ts/.tsx/.js/.jsx`) → **대응하는 테스트 파일이 있는지 확인**, 없으면 **차단**
+
+```bash
+#!/bin/bash
+# TDD Guard Hook — PreToolUse[Edit|Write]
+# 구현 코드를 작성하려 할 때, 해당 모듈의 테스트 파일이 먼저 존재하는지 체크.
+# 테스트 없이 구현 코드를 작성하려 하면 차단.
+
+INPUT=$(cat)
+FILE_PATH=$(echo "$INPUT" | jq -r '.tool_input.file_path // empty')
+
+# 파일 경로가 없으면 통과
+if [ -z "$FILE_PATH" ]; then
+  exit 0
+fi
+
+# 프로젝트가 아직 스캐폴딩되지 않았으면(package.json 없음) TDD 가드를 건너뛴다.
+# 테스트 프레임워크가 깔리기 전(MVP 부트스트랩)에는 강제할 대상이 없기 때문.
+ROOT=$(git rev-parse --show-toplevel 2>/dev/null || pwd)
+if [ ! -f "$ROOT/package.json" ]; then
+  exit 0
+fi
+
+# 테스트 파일 자체를 수정하는 건 허용
+case "$FILE_PATH" in
+  *test*|*spec*|*.test.*|*.spec.*|*__tests__*)
+    exit 0
+    ;;
+esac
+
+# 설정/타입/스타일 파일은 테스트 불필요 — 허용
+case "$FILE_PATH" in
+  *.json|*.css|*.scss|*.md|*.yml|*.yaml|*.env*|*.config.*|*tailwind*|*postcss*|*next.config*|*tsconfig*)
+    exit 0
+    ;;
+esac
+
+# types/ 폴더는 테스트 불필요 — 허용
+case "$FILE_PATH" in
+  */types/*|*/types.ts|*/types.d.ts)
+    exit 0
+    ;;
+esac
+
+# Next.js 프레임워크 파일은 허용 (layout, page, loading, error, not-found, global styles)
+case "$FILE_PATH" in
+  */layout.tsx|*/layout.ts|*/page.tsx|*/page.ts|*/loading.tsx|*/error.tsx|*/not-found.tsx|*/globals.css)
+    exit 0
+    ;;
+esac
+
+# lib/ 또는 소스 파일이면 테스트 파일 존재 여부 확인
+case "$FILE_PATH" in
+  *.ts|*.tsx|*.js|*.jsx)
+    DIR=$(dirname "$FILE_PATH")
+    BASENAME=$(basename "$FILE_PATH" | sed -E 's/\.(ts|tsx|js|jsx)$//')
+
+    TEST_FOUND=false
+
+    # 같은 폴더에 .test / .spec 파일
+    for EXT in ts tsx js jsx; do
+      if [ -f "${DIR}/${BASENAME}.test.${EXT}" ] || [ -f "${DIR}/${BASENAME}.spec.${EXT}" ]; then
+        TEST_FOUND=true
+        break
+      fi
+    done
+
+    # __tests__ 폴더
+    if [ "$TEST_FOUND" = false ]; then
+      PARENT=$(dirname "$DIR")
+      for EXT in ts tsx js jsx; do
+        if [ -f "${PARENT}/__tests__/${BASENAME}.test.${EXT}" ] || [ -f "${DIR}/__tests__/${BASENAME}.test.${EXT}" ]; then
+          TEST_FOUND=true
+          break
+        fi
+      done
+    fi
+
+    # src/__tests__/ 루트 테스트 폴더
+    if [ "$TEST_FOUND" = false ]; then
+      PROJECT_ROOT=$(git rev-parse --show-toplevel 2>/dev/null || echo ".")
+      for EXT in ts tsx js jsx; do
+        if [ -f "${PROJECT_ROOT}/src/__tests__/${BASENAME}.test.${EXT}" ]; then
+          TEST_FOUND=true
+          break
+        fi
+      done
+    fi
+
+    if [ "$TEST_FOUND" = false ]; then
+      cat << EOF
+{
+  "hookSpecificOutput": {
+    "hookEventName": "PreToolUse",
+    "permissionDecision": "deny",
+    "permissionDecisionReason": "TDD GUARD: '${BASENAME}'에 대한 테스트 파일이 존재하지 않습니다. 구현 코드를 작성하기 전에 테스트를 먼저 작성하세요. (테스트 파일 예: ${BASENAME}.test.ts)"
+  }
+}
+EOF
+    fi
+    ;;
+esac
+
+exit 0
+```
+
+핵심은 마지막 블록이다.
+테스트가 없으면 스크립트가 `permissionDecision: "deny"`를 JSON으로 출력하는데,
+`PreToolUse`에서 이 값을 받으면 Claude Code는 해당 편집을 막고 `permissionDecisionReason` 메시지를 Claude에게 돌려준다.
+그래서 Claude는 "테스트부터 작성하라"는 안내를 받고 구현 대신 테스트를 먼저 쓰게 된다.
+
+부트스트랩(아직 `package.json`이 없음) 단계나 설정·프레임워크 파일은 통과시키는 예외 처리가 들어 있는 게 포인트다.
+무작정 다 막으면 프로젝트를 시작조차 할 수 없기 때문에, "강제할 대상이 생긴 다음부터" 가드가 작동하도록 만들었다.
+
+이 훅은 **프로젝트 훅으로 설정했다.** TDD를 적용할 프로젝트의 `.claude/settings.json`에만 넣었다는 뜻이다.
+전역(`~/.claude/settings.json`)에 걸면 Claude Code로 코드를 쓸 때마다 어디서든 테스트부터 강제당하는데,
+간단한 스크립트나 다른 프로젝트에서는 오히려 거추장스럽다. TDD가 필요한 프로젝트 안에서만 켜는 게 맞다.
+
+---
+
+## 예시 2. 작업 완료 소리 알림
+
+**언제 쓰나** — Claude가 작업하는 동안 다른 일을 하다가, 끝난 줄 모르고 화면을 계속 들여다보게 될 때.
+작업이 끝나면 소리로 알려주면 화면을 안 봐도 된다.
+
+macOS는 `afplay` 명령으로 시스템 사운드를 재생할 수 있다.
+`Stop`(응답 종료)과 `Notification`(권한 요청 등 알림)에 각각 다른 소리를 건다.
+
+```json
+{
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [{ "type": "command", "command": "afplay /System/Library/Sounds/Glass.aiff" }]
+      }
+    ],
+    "Notification": [
+      {
+        "matcher": "*",
+        "hooks": [{ "type": "command", "command": "afplay /System/Library/Sounds/Frog.aiff" }]
+      }
+    ]
+  }
+}
+```
+
+- `Stop` → 작업이 끝나면 **Glass** 소리. (앞서 말했듯 `Stop`은 matcher가 없어 생략했다)
+- `Notification` → 권한 요청 등 알림이 뜨면 **Frog** 소리. 두 소리를 다르게 두면 "끝난 건지, 내 확인을 기다리는 건지"를 소리만 듣고 구분할 수 있다.
+
+`/System/Library/Sounds/` 안에 Glass, Frog, Ping, Submarine 등 여러 소리가 들어 있으니 취향대로 바꾸면 된다.
+
+이 훅은 반대로 **전역으로 설정했다.** `~/.claude/settings.json`에 넣어서 모든 프로젝트에 적용했다는 뜻이다.
+"작업이 끝났는지 소리로 알고 싶다"는 건 프로젝트를 가리지 않고 항상 필요한 편의라서, 한 번 걸어두고 어디서나 쓰는 게 낫다.
+
+> 정리하면, **그 프로젝트에서만 의미 있는 규칙은 프로젝트 훅(`.claude/settings.json`), 어디서나 똑같이 필요한 편의는 전역 훅(`~/.claude/settings.json`)** 으로 두면 된다.
+
+---
+
+## 정리
+
+훅은 결국 "이 이벤트가 발생하면 이 명령을 실행해라"를 `settings.json`에 적어두는 것이다.
+TDD처럼 작업 흐름을 강제하는 데도 쓰고, 소리 알림처럼 사소한 편의에도 쓴다.
+
+핵심은 **이벤트를 고르고, (필요하면) matcher로 범위를 좁히고, 실행할 명령을 거는 것** 세 가지다.
+이 패턴만 익히면 나머지 30여 개 이벤트도 똑같은 방식으로 응용할 수 있다.

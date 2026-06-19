@@ -1,0 +1,110 @@
+---
+title: 'HeadlessUI 모바일 메뉴 Hydration 에러 해결하기 (React 19 + Next.js 15)'
+date: '2026-06-19'
+tags: ['webdev', 'nextjs', 'react']
+draft: true
+summary: '로컬에서 블로그를 열었더니 모바일 네비게이션에서 hydration mismatch 에러가 났다. 원인이 HeadlessUI의 Dialog였는데, 마운트 이후에만 렌더하는 방식으로 해결한 과정을 정리했다.'
+---
+
+로컬에서 블로그를 띄웠더니 콘솔에 hydration 에러가 떴다.
+화면은 일단 그려지지만, React가 "서버가 만든 HTML과 클라이언트가 만든 HTML이 다르다"며 트리를 다시 그리는 상황이었다.
+
+```text
+Hydration failed because the server rendered HTML didn't match the client.
+  ...
+    at MobileNav (components/MobileNav.tsx:46:9)
+    at Header (components/Header.tsx:47:9)
+    at RootLayout (app/layout.tsx:102:15)
+```
+
+에러 스택을 보니 `MobileNav` 컴포넌트가 범인이었다.
+
+---
+
+## 무엇이 어긋났나
+
+에러 메시지의 diff가 원인을 정확히 보여줬다.
+
+```text
++ <div data-headlessui-portal="" ...>   ← 클라이언트가 그린 것
+- <span hidden="" style={...}>          ← 서버가 그린 것
+```
+
+`MobileNav`는 모바일 화면의 햄버거 메뉴인데, [HeadlessUI](https://headlessui.com/)의 `Dialog`와 `Transition`으로 만들어져 있다.
+
+```tsx
+<Transition appear show={navShow} as={Fragment} unmount={false}>
+  <Dialog as="div" onClose={onToggleNav} unmount={false}>
+    {/* ... */}
+  </Dialog>
+</Transition>
+```
+
+핵심은 `unmount={false}`다.
+이 옵션은 메뉴가 닫혀 있어도 Dialog를 DOM에서 제거하지 않고 계속 마운트해 둔다.
+그런데 이 "닫힌 Dialog"를 그리는 방식이 서버와 클라이언트에서 다르다.
+
+- **서버**: 포커스 가드용 `<span hidden>`으로 렌더
+- **클라이언트**: 포털 컨테이너 `<div data-headlessui-portal>`로 렌더
+
+둘이 어긋나니 hydration이 실패하는 것이다.
+React 19 + HeadlessUI 2.x + Next.js 15 App Router 조합에서 알려진 문제다.
+
+```text
+react: 19.2.4 | @headlessui/react: 2.2.9 | next: 15.5.12
+```
+
+---
+
+## 해결: 마운트 이후에만 렌더
+
+이 메뉴는 어차피 버튼을 누르기 전까지는 숨겨져 있다.
+그렇다면 굳이 서버에서 Dialog를 그릴 필요가 없다.
+**클라이언트에서 마운트된 다음에만** Dialog를 렌더하면, 서버와 첫 클라이언트 렌더가 모두 "버튼만 있는 상태"로 일치하게 된다.
+
+`mounted` 상태를 하나 두고, `useEffect`로 마운트 직후에 켠다.
+
+```tsx
+const [mounted, setMounted] = useState(false)
+
+useEffect(() => {
+  setMounted(true)
+}, [])
+```
+
+그리고 Dialog 블록 전체를 `mounted` 뒤로 숨긴다.
+
+```tsx
+return (
+  <>
+    <button aria-label="Toggle Menu" onClick={onToggleNav} className="sm:hidden">
+      {/* 햄버거 아이콘 */}
+    </button>
+
+    {mounted && (
+      <Transition appear show={navShow} as={Fragment} unmount={false}>
+        <Dialog as="div" onClose={onToggleNav} unmount={false}>
+          {/* ... */}
+        </Dialog>
+      </Transition>
+    )}
+  </>
+)
+```
+
+이제 흐름은 이렇다.
+
+1. 서버 렌더 → 버튼만 그림
+2. 클라이언트 첫 렌더(hydration) → `mounted`가 아직 `false`라 똑같이 버튼만 그림 → **트리 일치**
+3. `useEffect` 실행 → `mounted`가 `true`로 바뀌며 Dialog가 추가됨 (hydration이 끝난 뒤라 mismatch 아님)
+
+메뉴는 탭하기 전엔 보이지 않으므로 사용자 입장에서 달라지는 건 없고, 콘솔의 hydration 에러만 사라진다.
+
+---
+
+## 정리
+
+hydration mismatch는 "서버와 클라이언트가 같은 HTML을 만들어야 한다"는 규칙이 깨질 때 난다.
+이번 경우처럼 **서버에서 그릴 필요가 없는 클라이언트 전용 UI**라면, 마운트 이후로 렌더를 미루는 게 가장 간단한 해법이다.
+
+같은 패턴은 테마 토글, 모달, 툴팁처럼 "처음엔 숨겨져 있고 클라이언트에서만 의미 있는" 컴포넌트에 두루 쓸 수 있다.

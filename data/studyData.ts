@@ -6,14 +6,19 @@ interface StudyCategory {
 
 const studyData: StudyCategory[] = [
   {
+    title: 'AI',
+    description: 'LLM·에이전트 등 AI 전반 지식과, 실제 프로젝트에 적용하며 정리한 학습 기록.',
+    href: '/tags/ai',
+  },
+  {
     title: 'Backend',
     description: 'FastAPI, PostgreSQL, REST API 설계 등 백엔드 개발 공부 기록.',
     href: '/tags/backend',
   },
   {
-    title: 'ADP',
-    description: '데이터 분석 전문가(ADP) 자격증 준비 과정',
-    href: '/tags/adp',
+    title: '자격증',
+    description: 'ADP, 정보처리기사 등 데이터·개발 자격증 준비 과정 기록.',
+    href: '/tags/certification',
   },
   {
     title: 'Web Dev',

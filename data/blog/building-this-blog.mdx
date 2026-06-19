@@ -3,10 +3,10 @@ title: 'Next.js로 기술 블로그 만들고 Vercel에 배포하기'
 date: '2026-06-01'
 tags: ['webdev', 'nextjs', 'tailwind', 'vercel']
 draft: false
-summary: 'tailwind-nextjs-starter-blog 템플릿을 클론해서 내 블로그로 커스터마이징하고 Vercel에 배포하는 전체 과정을 정리했습니다.'
+summary: 'tailwind-nextjs-starter-blog 템플릿을 클론해서 내 블로그로 커스터마이징하고 Vercel에 배포하는 전체 과정을 정리했다.'
 ---
 
-Jekyll 같은 정적 블로그 도구도 있지만, Next.js 기반 템플릿을 사용하면 배포 과정 자체가 공부가 되고 포트폴리오로도 활용할 수 있어서 이 방법을 선택했습니다.
+Jekyll 같은 정적 블로그 도구도 있지만, Next.js 기반 템플릿을 쓰면 배포 과정 자체가 공부가 되고 포트폴리오로도 활용할 수 있어서 이 방법을 골랐다.
 
 ## 사용한 도구
 
@@ -25,9 +25,9 @@ npm install
 npm run dev
 ```
 
-`http://localhost:3000`에서 템플릿 기본 화면이 뜨면 정상입니다.
+`http://localhost:3000`에서 템플릿 기본 화면이 뜨면 정상이다.
 
-클론 후 기존 git 연결을 끊고 새로 초기화합니다.
+클론 후 기존 git 연결을 끊고 새로 초기화한다.
 
 ```bash
 rm -rf .git
@@ -38,7 +38,7 @@ git init
 
 ## 2단계: siteMetadata.js 수정
 
-**`data/siteMetadata.js`** 는 블로그 전체에서 공유하는 설정 파일입니다. 블로그 이름, URL, 이메일, SNS 링크 등이 여기 정의되어 있고, 모든 페이지가 이 값을 불러다 씁니다. 이 파일 하나만 바꾸면 전체 페이지에 반영됩니다.
+**`data/siteMetadata.js`** 는 블로그 전체에서 공유하는 설정 파일이다. 블로그 이름, URL, 이메일, SNS 링크 등이 여기 정의되어 있고, 모든 페이지가 이 값을 불러다 쓴다. 이 파일 하나만 바꾸면 전체 페이지에 반영된다.
 
 주요 수정 항목:
 
@@ -56,15 +56,15 @@ const siteMetadata = {
 }
 ```
 
-`siteUrl`은 SEO, sitemap, OG 태그 생성에 사용되므로 배포 후 반드시 실제 주소로 업데이트해야 합니다.
+`siteUrl`은 SEO, sitemap, OG 태그 생성에 쓰이므로 배포 후 반드시 실제 주소로 업데이트해야 한다.
 
 ---
 
 ## 3단계: 작성자 정보 수정
 
-**`data/authors/default.mdx`** 는 `/about` 페이지와 글 하단 작성자 카드에 표시되는 정보입니다.
+**`data/authors/default.mdx`** 는 `/about` 페이지와 글 하단 작성자 카드에 표시되는 정보다.
 
-파일 맨 위 `---` 사이 부분을 **frontmatter**라고 합니다. HTML의 `<meta>` 태그처럼 구조화된 정보를 담고, 아래 본문이 실제 페이지에 표시됩니다.
+파일 맨 위 `---` 사이 부분을 **frontmatter**라고 한다. HTML의 `<meta>` 태그처럼 구조화된 정보를 담고, 아래 본문이 실제 페이지에 표시된다.
 
 ```mdx
 ---
@@ -77,19 +77,19 @@ github: https://github.com/username
 자기소개 내용
 ```
 
-아바타 이미지를 바꾸고 싶다면 `public/static/images/avatar.png` 파일을 같은 파일명으로 교체하면 됩니다.
+아바타 이미지를 바꾸고 싶다면 `public/static/images/avatar.png` 파일을 같은 파일명으로 교체하면 된다.
 
 ---
 
 ## 4단계: 샘플 글 삭제 & 첫 포스트 작성
 
-`data/blog/` 폴더 안의 샘플 파일을 모두 삭제하고 첫 글을 작성합니다.
+`data/blog/` 폴더 안의 샘플 파일을 모두 삭제하고 첫 글을 작성한다.
 
 ```bash
 rm -rf data/blog/*
 ```
 
-이 폴더에 `.mdx` 파일을 추가하면 Next.js가 빌드 시 자동으로 페이지를 생성합니다. 파일명이 곧 URL이 됩니다.
+이 폴더에 `.mdx` 파일을 추가하면 Next.js가 빌드 시 자동으로 페이지를 생성한다. 파일명이 곧 URL이 된다.
 
 ```
 data/blog/hello-world.mdx  →  /blog/hello-world
@@ -107,13 +107,13 @@ summary: '글 목록에 표시되는 한 줄 요약'
 본문 내용
 ```
 
-`draft: true`로 설정하면 로컬에서는 보이지만 배포(빌드) 시에는 제외됩니다.
+`draft: true`로 설정하면 로컬에서는 보이지만 배포(빌드) 시에는 제외된다.
 
 ---
 
 ## 5단계: GitHub 저장소 연결
 
-GitHub에서 새 저장소를 **Public**으로 생성한 후 연결합니다.
+GitHub에서 새 저장소를 **Public**으로 생성한 후 연결한다.
 
 ```bash
 git remote add origin git@github.com:username/tech-blog.git
@@ -122,7 +122,7 @@ git commit -m "Initial blog setup"
 git push -u origin master
 ```
 
-SSH 키가 여러 계정으로 설정되어 있다면 `~/.ssh/config`에서 올바른 키를 확인하세요.
+SSH 키가 여러 계정으로 설정되어 있다면 `~/.ssh/config`에서 올바른 키를 확인하자.
 
 ---
 
@@ -135,7 +135,7 @@ SSH 키가 여러 계정으로 설정되어 있다면 `~/.ssh/config`에서 올�
 
 ### yarn.lock 오류 발생 시
 
-`npm install`로 패키지를 설치했다면 `yarn.lock`이 최신 상태가 아니어서 빌드가 실패할 수 있습니다. 이 프로젝트는 Yarn을 사용하도록 설정되어 있기 때문입니다.
+`npm install`로 패키지를 설치했다면 `yarn.lock`이 최신 상태가 아니어서 빌드가 실패할 수 있다. 이 프로젝트는 Yarn을 쓰도록 설정되어 있기 때문이다.
 
 ```bash
 node .yarn/releases/yarn-3.6.1.cjs install
@@ -144,16 +144,16 @@ git commit -m "Fix yarn lockfile"
 git push
 ```
 
-push 후 Vercel이 자동으로 재배포합니다.
+push 후 Vercel이 자동으로 재배포한다.
 
 ---
 
 ## 7단계: siteUrl 업데이트
 
-배포 완료 후 생성된 Vercel URL을 `siteMetadata.js`에 반영합니다.
+배포 완료 후 생성된 Vercel URL을 `siteMetadata.js`에 반영한다.
 
 ```js
 siteUrl: 'https://your-actual-url.vercel.app',
 ```
 
-커밋 후 push하면 자동 재배포됩니다. 이후로는 `git push`만 하면 블로그가 자동으로 업데이트됩니다.
+커밋 후 push하면 자동 재배포된다. 이후로는 `git push`만 하면 블로그가 자동으로 업데이트된다.
